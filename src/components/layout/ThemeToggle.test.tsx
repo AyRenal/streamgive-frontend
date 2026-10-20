@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { THEME_INIT_SCRIPT, THEME_STORAGE_KEY } from '@/lib/theme';
+import { THEME_STORAGE_KEY } from '@/lib/theme';
 
 import { ThemeToggle } from './ThemeToggle';
 
@@ -35,7 +35,7 @@ describe('ThemeToggle', () => {
     const user = userEvent.setup();
     mockSystemTheme(true);
     localStorage.setItem(THEME_STORAGE_KEY, 'light');
-    new Function(THEME_INIT_SCRIPT)();
+    document.documentElement.classList.add('light');
     render(<ThemeToggle />);
 
     await user.click(screen.getByRole('button', { name: 'Switch to dark mode' }));
@@ -66,8 +66,8 @@ describe('ThemeToggle', () => {
     (stored, dark, label, opposite) => {
       mockSystemTheme(dark);
       localStorage.setItem(THEME_STORAGE_KEY, stored);
-      // The layout runs this script before the toggle mounts.
-      new Function(THEME_INIT_SCRIPT)();
+      // Simulate the class set before hydration; theme.test.ts covers the script itself.
+      document.documentElement.classList.add(stored);
 
       render(<ThemeToggle />);
 

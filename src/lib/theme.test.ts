@@ -14,6 +14,39 @@ function mockSystemTheme(dark: boolean) {
   vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: dark }));
 }
 
+function runThemeInitScript(): HTMLElement {
+  // Load the app's actual inline script as a browser would. The iframe keeps
+  // its pre-hydration document separate from Vitest's document and globals.
+  const frame = document.createElement('iframe');
+  document.body.appendChild(frame);
+
+  try {
+    const browser = frame.contentWindow;
+    const frameDocument = frame.contentDocument;
+    if (!browser || !frameDocument) throw new Error('Theme test document unavailable');
+
+    // Share the API mocks with the iframe's own browser context.
+    browser.matchMedia = window.matchMedia;
+    Object.defineProperty(browser, 'localStorage', { value: localStorage });
+
+    let scriptError: string | undefined;
+    browser.addEventListener('error', (event) => {
+      scriptError = event.message;
+      event.preventDefault();
+    });
+
+    const script = frameDocument.createElement('script');
+    script.textContent = THEME_INIT_SCRIPT;
+    frameDocument.head.appendChild(script);
+
+    // DOM script errors are reported as events, rather than thrown by appendChild.
+    if (scriptError !== undefined) throw new Error(scriptError);
+    return frameDocument.documentElement;
+  } finally {
+    frame.remove();
+  }
+}
+
 beforeEach(() => {
   localStorage.clear();
   document.documentElement.classList.remove('light', 'dark');
@@ -143,10 +176,10 @@ describe('THEME_INIT_SCRIPT', () => {
     mockSystemTheme(systemDark);
     localStorage.setItem(THEME_STORAGE_KEY, stored);
 
-    new Function(THEME_INIT_SCRIPT)();
+    const html = runThemeInitScript();
 
-    expect(document.documentElement).toHaveClass(stored);
-    expect(document.documentElement).not.toHaveClass(opposite);
+    expect(html).toHaveClass(stored);
+    expect(html).not.toHaveClass(opposite);
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe(stored);
     expect(window.matchMedia).not.toHaveBeenCalled();
   });
@@ -160,20 +193,21 @@ describe('THEME_INIT_SCRIPT', () => {
       mockSystemTheme(dark);
       const setItem = vi.spyOn(Storage.prototype, 'setItem');
 
-      new Function(THEME_INIT_SCRIPT)();
+      const html = runThemeInitScript();
 
-      expect(document.documentElement).toHaveClass(expected);
-      expect(document.documentElement).not.toHaveClass(opposite);
+      expect(html).toHaveClass(expected);
+      expect(html).not.toHaveClass(opposite);
       expect(localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
       expect(setItem).not.toHaveBeenCalled();
     },
   );
 
   it('does not throw when storage is unavailable before hydration', () => {
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('Storage unavailable');
     });
 
-    expect(() => new Function(THEME_INIT_SCRIPT)()).not.toThrow();
+    expect(() => runThemeInitScript()).not.toThrow();
+    expect(getItem).toHaveBeenCalledWith(THEME_STORAGE_KEY);
   });
 });
