@@ -5,8 +5,6 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { ConnectWalletPrompt } from '@/components/common/ConnectWalletPrompt';
 import { StreamControls } from '@/components/dashboard/StreamControls';
-import { Footer } from '@/components/layout/Footer';
-import { Header } from '@/components/layout/Header';
 import { StreamDetailsModal } from '@/components/streams/StreamDetailsModal';
 import { useWallet } from '@/components/wallet/WalletProvider';
 import { getStreams, type Stream } from '@/lib/api';
@@ -283,7 +281,6 @@ export default function DashboardPage() {
 
   return (
     <>
-      <Header />
       <main id="main" className="px-6 py-16 sm:px-12">
         <h1 className="text-2xl font-bold">Your donations</h1>
 
@@ -482,7 +479,6 @@ export default function DashboardPage() {
           </>
         )}
       </main>
-      <Footer />
 
       {detailsStream && (
         <StreamDetailsModal stream={detailsStream} onClose={() => setDetailsStream(null)} />

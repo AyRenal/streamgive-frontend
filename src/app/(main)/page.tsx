@@ -2,13 +2,10 @@ import Link from 'next/link';
 
 import { HowItWorks } from '@/components/landing/HowItWorks';
 import { StatsStrip } from '@/components/landing/StatsStrip';
-import { Footer } from '@/components/layout/Footer';
-import { Header } from '@/components/layout/Header';
 
 export default function Home() {
   return (
     <>
-      <Header />
       <main id="main">
         <section className="flex flex-col items-center gap-6 px-6 py-24 text-center sm:px-12">
           <h1 className="max-w-2xl text-4xl font-bold sm:text-5xl">
@@ -28,7 +25,6 @@ export default function Home() {
         <StatsStrip />
         <HowItWorks />
       </main>
-      <Footer />
     </>
   );
 }
