@@ -4,8 +4,6 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 
 import { ConnectWalletPrompt } from '@/components/common/ConnectWalletPrompt';
-import { Footer } from '@/components/layout/Footer';
-import { Header } from '@/components/layout/Header';
 import { DonateQrCode } from '@/components/ngos/DonateQrCode';
 import { EmbedSnippet } from '@/components/ngoAdmin/EmbedSnippet';
 import { NgoAdminStreamList } from '@/components/ngoAdmin/NgoAdminStreamList';
@@ -91,7 +89,6 @@ export default function NgoAdminPage() {
 
   return (
     <>
-      <Header />
       <main id="main" className="px-6 py-16 sm:px-12">
         <h1 className="text-2xl font-bold">NGO admin</h1>
 
@@ -102,13 +99,17 @@ export default function NgoAdminPage() {
           />
         )}
 
-        {address && loading && (
+        {/* Only the very first load has nothing to show yet — a refresh
+            triggered after a withdrawal keeps whatever's already rendered
+            on screen (the embed snippet, QR code, open modal, etc.)
+            mounted while it runs in the background. */}
+        {address && loading && ngo === undefined && (
           <p role="status" className="mt-8 text-gray-500 dark:text-gray-400">
             Loading…
           </p>
         )}
 
-        {address && !loading && loadError && (
+        {address && loadError && ngo === undefined && (
           <div className="mt-8">
             <p className="text-red-600 dark:text-red-400">
               Couldn&apos;t load your NGO data. Please check your connection and try again.
@@ -123,7 +124,15 @@ export default function NgoAdminPage() {
           </div>
         )}
 
-        {address && !loading && !loadError && ngo === null && (
+        {/* A background refresh failing must not blank out data we already
+            have — same reasoning as the impact page's poll failures. */}
+        {address && loadError && ngo !== undefined && (
+          <p role="status" className="mt-8 text-sm text-amber-700 dark:text-amber-400">
+            Couldn&apos;t refresh — showing the last data we loaded.
+          </p>
+        )}
+
+        {address && ngo === null && (
           <p className="mt-8 text-gray-600">
             This wallet isn&apos;t registered as an NGO yet.{' '}
             <Link href="/apply" className="underline">
@@ -133,7 +142,7 @@ export default function NgoAdminPage() {
           </p>
         )}
 
-        {address && !loading && !loadError && ngo && !ngo.verified && (
+        {address && ngo && !ngo.verified && (
           <div className="mt-8 rounded-lg border border-gray-200 p-6">
             <p className="font-medium">Your application is awaiting review.</p>
             <p className="mt-1 text-sm text-gray-600">
@@ -143,7 +152,7 @@ export default function NgoAdminPage() {
           </div>
         )}
 
-        {address && !loading && !loadError && ngo?.verified && (
+        {address && ngo?.verified && (
           <>
             <p className="mt-2 text-gray-600 dark:text-gray-400">
               Managing streams for {ngo.name}.
@@ -178,7 +187,6 @@ export default function NgoAdminPage() {
           </>
         )}
       </main>
-      <Footer />
 
       {detailsStream && (
         <StreamDetailsModal stream={detailsStream} onClose={() => setDetailsStream(null)} />

@@ -3,8 +3,6 @@
 import { useEffect, useState, useRef, type FormEvent } from 'react';
 
 import { ApplicationStatusPanel } from '@/components/apply/ApplicationStatusPanel';
-import { Footer } from '@/components/layout/Footer';
-import { Header } from '@/components/layout/Header';
 import { useWallet } from '@/components/wallet/WalletProvider';
 import {
   ApiError,
@@ -138,27 +136,21 @@ export default function ApplyPage() {
 
   if (status === 'success') {
     return (
-      <>
-        <Header />
-        <main id="main" className="px-6 py-16 sm:px-12">
-          <div className="max-w-md rounded-lg border border-green-200 bg-green-50 p-6 dark:border-green-900 dark:bg-green-950">
-            <p className="font-medium text-green-800 dark:text-green-300">
-              Application submitted!
-            </p>
-            <p className="mt-1 text-sm text-green-700 dark:text-green-400">
-              We&apos;ll review it and reach out at the contact email you provided.
-            </p>
-          </div>
-        </main>
-        <Footer />
-      </>
+      <main id="main" className="px-6 py-16 sm:px-12">
+        <div className="max-w-md rounded-lg border border-green-200 bg-green-50 p-6 dark:border-green-900 dark:bg-green-950">
+          <p className="font-medium text-green-800 dark:text-green-300">
+            Application submitted!
+          </p>
+          <p className="mt-1 text-sm text-green-700 dark:text-green-400">
+            We&apos;ll review it and reach out at the contact email you provided.
+          </p>
+        </div>
+      </main>
     );
   }
 
   return (
-    <>
-      <Header />
-      <main id="main" className="px-6 py-16 sm:px-12">
+    <main id="main" className="px-6 py-16 sm:px-12">
         <h1 className="text-2xl font-bold">Apply as an NGO</h1>
         <p className="mt-2 max-w-md text-sm text-gray-600 dark:text-gray-400">
           Connect the wallet your organization will use to receive donations, then tell us about
@@ -284,7 +276,5 @@ export default function ApplyPage() {
           </>
         )}
       </main>
-      <Footer />
-    </>
   );
 }

@@ -2,8 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { Footer } from '@/components/layout/Footer';
-import { Header } from '@/components/layout/Header';
 import { CopyLinkButton } from '@/components/common/CopyLinkButton';
 import { DonateQrCode } from '@/components/ngos/DonateQrCode';
 import { getNgo, getStreams, type NgoProfile, type Stream } from '@/lib/api';
@@ -53,21 +51,17 @@ export default async function NgoProfilePage({ params }: Props) {
     ngo = await getNgo(id);
   } catch {
     return (
-      <>
-        <Header />
-        <main id="main" className="px-6 py-16 sm:px-12">
-          <p className="text-red-600 dark:text-red-400">
-            Couldn&apos;t load this NGO&apos;s profile. Please check your connection and try again.
-          </p>
-          <Link
-            href={`/ngos/${id}`}
-            className="mt-3 inline-block rounded-md border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
-          >
-            Retry
-          </Link>
-        </main>
-        <Footer />
-      </>
+      <main id="main" className="px-6 py-16 sm:px-12">
+        <p className="text-red-600 dark:text-red-400">
+          Couldn&apos;t load this NGO&apos;s profile. Please check your connection and try again.
+        </p>
+        <Link
+          href={`/ngos/${id}`}
+          className="mt-3 inline-block rounded-md border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+        >
+          Retry
+        </Link>
+      </main>
     );
   }
 
@@ -78,16 +72,18 @@ export default async function NgoProfilePage({ params }: Props) {
   const websiteUrl = ngo.website ? safeWebsiteUrl(ngo.website) : null;
 
   // The API has no "most recent first" ordering guarantee, so that's
-  // enforced here rather than trusting response order.
-  const streams = await getStreams({ ngo: ngo.id }).catch((): Stream[] => []);
-  const recentStreams = [...streams]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, RECENT_STREAMS_LIMIT);
+  // enforced here rather than trusting response order. The limit still
+  // keeps the request itself small on NGOs with a long stream history —
+  // this only re-sorts whatever page comes back, not the full history.
+  const streams = await getStreams({ ngo: ngo.id, limit: RECENT_STREAMS_LIMIT }).catch(
+    (): Stream[] => [],
+  );
+  const recentStreams = [...streams].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
 
   return (
-    <>
-      <Header />
-      <main id="main" className="px-6 py-16 sm:px-12">
+    <main id="main" className="px-6 py-16 sm:px-12">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-bold">{ngo.name}</h1>
           {ngo.verified && (
@@ -201,7 +197,5 @@ export default async function NgoProfilePage({ params }: Props) {
           </ul>
         )}
       </main>
-      <Footer />
-    </>
   );
 }

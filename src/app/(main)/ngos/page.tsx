@@ -2,8 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
-import { Footer } from '@/components/layout/Footer';
-import { Header } from '@/components/layout/Header';
 import { NgoExplorer } from '@/components/ngos/NgoExplorer';
 import { getNgo, getNgos, type NgoProfile } from '@/lib/api';
 
@@ -37,9 +35,7 @@ export default async function NgosPage() {
   }
 
   return (
-    <>
-      <Header />
-      <main id="main" className="px-6 py-16 sm:px-12">
+    <main id="main" className="px-6 py-16 sm:px-12">
         <h1 className="text-2xl font-bold">Explore NGOs</h1>
 
         {loadError && (
@@ -65,7 +61,5 @@ export default async function NgosPage() {
           </Suspense>
         )}
       </main>
-      <Footer />
-    </>
   );
 }

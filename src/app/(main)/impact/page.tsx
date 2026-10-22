@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 
-import { Footer } from '@/components/layout/Footer';
-import { Header } from '@/components/layout/Header';
 import { formatAmount } from '@/lib/format';
 import { loadPlatformImpact, type PlatformImpact } from '@/lib/impact';
 
@@ -68,9 +66,7 @@ export default function ImpactPage() {
   }, [retryCount]);
 
   return (
-    <>
-      <Header />
-      <main id="main" className="px-6 py-16 sm:px-12">
+    <main id="main" className="px-6 py-16 sm:px-12">
         <h1 className="text-2xl font-bold">Platform impact</h1>
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
           Updates automatically every {POLL_INTERVAL_MS / 1000} seconds.
@@ -136,7 +132,5 @@ export default function ImpactPage() {
           </dl>
         )}
       </main>
-      <Footer />
-    </>
   );
 }
