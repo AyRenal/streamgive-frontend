@@ -43,6 +43,30 @@ isn't a CI gate (no minimum threshold is enforced), just a local signal.
 `npm run dev` for you and points at `http://localhost:3001` unless you set
 `E2E_BASE_URL` to an already-running instance (see `playwright.config.ts`).
 
+### Automated accessibility checks
+
+Install the dependencies and Chromium, then run the axe scans:
+
+```bash
+npm install
+npx playwright install chromium
+npm run test:a11y
+```
+
+`e2e/accessibility.spec.ts` scans the landing, NGO explorer, impact and donate
+pages in both light and dark mode (eight checks). These checks also run as
+part of `npm run test:e2e`. They scan the entire page using axe's default
+rules, including color contrast, and fail on any reported violation. Full
+scan results are attached to each test as `axe-results` JSON.
+
+Start the backend at the app's configured `NEXT_PUBLIC_API_URL` and ensure
+it contains at least one verified NGO with a working profile endpoint.
+The donate check selects a verified NGO from the explorer and scans the
+page with the wallet disconnected; no wallet extension or transaction is
+needed. Checks wait for populated content and fail if it cannot load.
+Playwright starts the frontend automatically, or you can set `E2E_BASE_URL`
+to an already-running frontend as described above.
+
 ### Writing a new test
 
 - **Unit/component tests** are colocated with the code they cover, e.g.
