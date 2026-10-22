@@ -22,6 +22,11 @@ const mockGetNetwork = vi.fn().mockResolvedValue({
   network: 'TESTNET',
   networkPassphrase: NETWORK_PASSPHRASE,
 });
+// Defaults to "a wallet is installed" so existing connect-flow tests reach
+// authModal() as before — the no-wallet-detected tests override this.
+const mockGetSupportedWallets = vi.fn().mockResolvedValue([
+  { id: 'freighter', name: 'Freighter', url: 'https://freighter.app', isAvailable: true },
+]);
 
 vi.mock('@creit.tech/stellar-wallets-kit/sdk', () => ({
   StellarWalletsKit: {
@@ -29,6 +34,7 @@ vi.mock('@creit.tech/stellar-wallets-kit/sdk', () => ({
     getAddress: (...args: unknown[]) => mockGetAddress(...args),
     authModal: (...args: unknown[]) => mockAuthModal(...args),
     getNetwork: (...args: unknown[]) => mockGetNetwork(...args),
+    getSupportedWallets: (...args: unknown[]) => mockGetSupportedWallets(...args),
     signTransaction: vi.fn(),
     signMessage: (...args: unknown[]) => mockSignMessage(...args),
   },

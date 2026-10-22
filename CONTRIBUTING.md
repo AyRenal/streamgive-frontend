@@ -21,8 +21,9 @@ without deploying contracts yourself.
 ## Testing
 
 ```bash
-npm test           # unit + component tests (vitest, single run)
-npm run test:e2e   # end-to-end tests (Playwright)
+npm test             # unit + component tests (vitest, single run)
+npm run test:coverage  # same, plus a coverage summary (@vitest/coverage-v8)
+npm run test:e2e     # end-to-end tests (Playwright)
 ```
 
 `npm test` runs Vitest once (no watch mode) against every `*.test.ts`/
@@ -32,6 +33,11 @@ the `jsdom` environment, the `@` path alias (mirroring `tsconfig.json`), and
 matchers and runs Testing Library's `cleanup()` after every test so DOM
 state doesn't leak between tests in the same file (this project doesn't use
 Vitest's `globals: true`, so that cleanup isn't automatic).
+
+`npm run test:coverage` runs the same suite with V8 coverage instrumentation
+on and prints a per-file table plus an overall summary to the terminal —
+useful for spotting code a change left untested before opening a PR. It
+isn't a CI gate (no minimum threshold is enforced), just a local signal.
 
 `npm run test:e2e` runs the Playwright specs in `e2e/`. It starts
 `npm run dev` for you and points at `http://localhost:3001` unless you set

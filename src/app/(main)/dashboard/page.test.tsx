@@ -656,5 +656,99 @@ describe('DashboardPage', () => {
       expect(buildDonationHistoryCsv).toHaveBeenCalledWith([cancelledStream]);
     });
   });
+
+  describe('load error banner', () => {
+    it('shows a retry banner when the initial fetch fails, and clears it on a successful retry', async () => {
+      mockConnectedWallet();
+      const getStreamsMock = vi.spyOn(ApiMod, 'getStreams');
+      getStreamsMock.mockRejectedValueOnce(new Error('network down'));
+
+      const user = userEvent.setup();
+      render(<DashboardPage />);
+
+      expect(await screen.findByText(/couldn't load your streams/i)).toBeInTheDocument();
+      const retry = screen.getByRole('button', { name: 'Retry' });
+
+      getStreamsMock.mockResolvedValueOnce([
+        makeStream({ status: 'CANCELLED', ngo: { id: 'ngo-9', name: 'Recovered NGO', ownerAddress: 'G9' } }),
+      ]);
+      await user.click(retry);
+
+      await waitFor(() => {
+        expect(screen.queryByText(/couldn't load your streams/i)).not.toBeInTheDocument();
+      });
+      expect(screen.getByText('Recovered NGO')).toBeInTheDocument();
+    });
+  });
+
+  describe('live balance', () => {
+    const liveBalanceAmount = () =>
+      screen.getByTitle('Estimated current balance based on stream rate').textContent?.split(' ')[0];
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('ticks the estimated balance down every second based on the rate, and floors at zero', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+
+      mockConnectedWallet();
+      vi.spyOn(ApiMod, 'getStreams').mockResolvedValue([
+        makeStream({
+          status: 'ACTIVE',
+          balance: '10000000', // formats to "1"
+          rate: '1000000', // 0.1/sec
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        }),
+      ]);
+
+      render(<DashboardPage />);
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      // No time has passed yet relative to `updatedAt`.
+      expect(liveBalanceAmount()).toBe('1');
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(liveBalanceAmount()).toBe('0.9');
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      expect(liveBalanceAmount()).toBe('0.7');
+
+      // 10s in, the balance is fully depleted (10,000,000 - 1,000,000*10 = 0).
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(7000);
+      });
+      expect(liveBalanceAmount()).toBe('0');
+
+      // Past depletion the raw formula goes negative — it must floor at
+      // zero rather than show that, or tick any further.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+      expect(liveBalanceAmount()).toBe('0');
+    });
+
+    it('shows the static balance with no live estimate for a non-active stream', async () => {
+      mockConnectedWallet();
+      vi.spyOn(ApiMod, 'getStreams').mockResolvedValue([
+        makeStream({ status: 'CANCELLED', balance: '10000000' }),
+      ]);
+
+      render(<DashboardPage />);
+
+      await waitFor(() => expect(screen.getByText('Test NGO')).toBeInTheDocument());
+      expect(
+        screen.queryByTitle('Estimated current balance based on stream rate'),
+      ).not.toBeInTheDocument();
+      expect(screen.getByText(/Balance 1 /)).toBeInTheDocument();
+    });
+  });
 });
 
