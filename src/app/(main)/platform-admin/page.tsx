@@ -1,11 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import type { AssembledTransaction } from '@stellar/stellar-sdk/contract';
 
 import { ConnectWalletPrompt } from '@/components/common/ConnectWalletPrompt';
 import { CopyAddressButton } from '@/components/common/CopyAddressButton';
-import { Footer } from '@/components/layout/Footer';
-import { Header } from '@/components/layout/Header';
 import { useToast } from '@/components/toast/ToastProvider';
 import { useWallet } from '@/components/wallet/WalletProvider';
 import type { Ngo, NgoApplication } from '@/lib/api';
@@ -31,6 +30,14 @@ export default function PlatformAdminPage() {
   const [statusFilter, setStatusFilter] = useState<'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
   const [revokeConfirmId, setRevokeConfirmId] = useState<string | null>(null);
   const [estimatedFee, setEstimatedFee] = useState<string | null>(null);
+  // The id of the application awaiting a second click, and the already-
+  // built (not yet signed) tx for it — built once, during the first click,
+  // so confirming signs the exact tx the fee estimate was shown for instead
+  // of re-simulating it.
+  const [confirmingApproveId, setConfirmingApproveId] = useState<string | null>(null);
+  const [pendingApproveTx, setPendingApproveTx] = useState<AssembledTransaction<null> | null>(
+    null,
+  );
 
   // Only the most recently started refresh may write state, so a slow
   // response for a previous status tab or wallet can't overwrite newer data.
@@ -74,8 +81,32 @@ export default function PlatformAdminPage() {
     void refresh();
   }, [refresh]);
 
-  async function handleApprove(app: NgoApplication): Promise<void> {
+  // Builds the (unsigned) approve tx and shows its fee estimate so the
+  // admin can confirm before anything is signed. Building just simulates
+  // the call — it doesn't touch the wallet or submit anything.
+  async function handleApproveClick(app: NgoApplication): Promise<void> {
     if (!address || !client) return;
+    setBusyId(app.id);
+    try {
+      const tx = await client.approve_ngo({ ngo_owner: app.ownerAddress });
+      setEstimatedFee(formatEstimatedFee(tx.built?.fee));
+      setPendingApproveTx(tx);
+      setConfirmingApproveId(app.id);
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : 'Something went wrong.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function handleCancelApprove(): void {
+    setConfirmingApproveId(null);
+    setPendingApproveTx(null);
+    setEstimatedFee(null);
+  }
+
+  async function handleConfirmApprove(app: NgoApplication): Promise<void> {
+    if (!address || !pendingApproveTx) return;
     setBusyId(app.id);
     try {
       // On-chain first: this is what actually flips Ngo.verified once the
@@ -83,9 +114,7 @@ export default function PlatformAdminPage() {
       // tx fails, we deliberately haven't touched the off-chain review
       // status yet — better an application stuck "pending" than one
       // marked "approved" while the NGO is still unverified on-chain.
-      const tx = await client.approve_ngo({ ngo_owner: app.ownerAddress });
-      setEstimatedFee(formatEstimatedFee(tx.built?.fee));
-      await tx.signAndSend();
+      await pendingApproveTx.signAndSend();
 
       await reviewNgoApplication(address, signMessage, app.id, 'approve', reviewNotes[app.id]);
       showToast('success', `${app.name} approved.`);
@@ -94,6 +123,8 @@ export default function PlatformAdminPage() {
       showToast('error', err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
       setBusyId(null);
+      setConfirmingApproveId(null);
+      setPendingApproveTx(null);
       setEstimatedFee(null);
     }
   }
@@ -130,9 +161,7 @@ export default function PlatformAdminPage() {
   }
 
   return (
-    <>
-      <Header />
-      <main id="main" className="px-6 py-16 sm:px-12">
+    <main id="main" className="px-6 py-16 sm:px-12">
         <h1 className="text-2xl font-bold">Platform admin</h1>
         <p className="mt-2 max-w-xl text-sm text-gray-600 dark:text-gray-400">
           Review pending NGO applications. Only the wallet configured as the platform&apos;s
@@ -230,7 +259,30 @@ export default function PlatformAdminPage() {
                       />
                     </label>
                     <div className="flex gap-2">
-                      {confirmingRejectId === app.id ? (
+                      {confirmingApproveId === app.id ? (
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            Approve {app.name}?
+                            {estimatedFee ? ` Estimated fee: ${estimatedFee}.` : ''}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => void handleConfirmApprove(app)}
+                            disabled={busyId === app.id}
+                            className="rounded-md bg-black px-3 py-1 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-gray-200"
+                          >
+                            {busyId === app.id ? 'Working…' : 'Yes, approve'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelApprove}
+                            disabled={busyId === app.id}
+                            className="rounded-md border border-gray-300 px-3 py-1 text-sm font-medium disabled:opacity-50 dark:border-gray-700"
+                          >
+                            Never mind
+                          </button>
+                        </div>
+                      ) : confirmingRejectId === app.id ? (
                         <div className="flex flex-wrap items-center justify-end gap-2">
                           <span className="text-sm text-gray-600 dark:text-gray-400">
                             Reject this application?
@@ -256,7 +308,7 @@ export default function PlatformAdminPage() {
                         <>
                           <button
                             type="button"
-                            onClick={() => void handleApprove(app)}
+                            onClick={() => void handleApproveClick(app)}
                             disabled={busyId === app.id}
                             className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-gray-200"
                           >
@@ -358,7 +410,5 @@ export default function PlatformAdminPage() {
           </div>
         )}
       </main>
-      <Footer />
-    </>
   );
 }

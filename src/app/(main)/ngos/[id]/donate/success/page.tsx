@@ -3,8 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { CopyLinkButton } from '@/components/common/CopyLinkButton';
-import { Footer } from '@/components/layout/Footer';
-import { Header } from '@/components/layout/Header';
 import { getNgo, getStreams, type NgoProfile } from '@/lib/api';
 
 type Props = {
@@ -30,21 +28,17 @@ export default async function DonateSuccessPage({ params, searchParams }: Props)
     ngo = await getNgo(id);
   } catch {
     return (
-      <>
-        <Header />
-        <main id="main" className="px-6 py-16 sm:px-12">
-          <p className="text-red-600 dark:text-red-400">
-            Couldn&apos;t load this page. Please check your connection and try again.
-          </p>
-          <Link
-            href={`/ngos/${id}/donate/success${streamId ? `?streamId=${streamId}` : ''}`}
-            className="mt-3 inline-block rounded-md border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
-          >
-            Retry
-          </Link>
-        </main>
-        <Footer />
-      </>
+      <main id="main" className="px-6 py-16 sm:px-12">
+        <p className="text-red-600 dark:text-red-400">
+          Couldn&apos;t load this page. Please check your connection and try again.
+        </p>
+        <Link
+          href={`/ngos/${id}/donate/success${streamId ? `?streamId=${streamId}` : ''}`}
+          className="mt-3 inline-block rounded-md border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+        >
+          Retry
+        </Link>
+      </main>
     );
   }
 
@@ -66,9 +60,7 @@ export default async function DonateSuccessPage({ params, searchParams }: Props)
     streamId && streams.some((stream) => stream.onChainId === streamId) ? streamId : null;
 
   return (
-    <>
-      <Header />
-      <main id="main" className="px-6 py-16 sm:px-12">
+    <main id="main" className="px-6 py-16 sm:px-12">
         <div className="max-w-md rounded-lg border border-green-200 bg-green-50 p-6 dark:border-green-900 dark:bg-green-950">
           <p className="font-medium text-green-800 dark:text-green-300">Stream started!</p>
           <p className="mt-1 text-sm text-green-700 dark:text-green-400">
@@ -100,7 +92,5 @@ export default async function DonateSuccessPage({ params, searchParams }: Props)
           </Link>
         </p>
       </main>
-      <Footer />
-    </>
   );
 }

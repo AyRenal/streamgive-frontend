@@ -143,12 +143,13 @@ export type Stream = {
  * @throws {Error} if the response is not ok.
  */
 export async function getStreams(
-  filter: { donor?: string; ngo?: string },
+  filter: { donor?: string; ngo?: string; limit?: number },
   signal?: AbortSignal,
 ): Promise<Stream[]> {
   const params = new URLSearchParams();
   if (filter.donor) params.set('donor', filter.donor);
   if (filter.ngo) params.set('ngo', filter.ngo);
+  if (filter.limit) params.set('limit', String(filter.limit));
 
   const res = await fetch(`${API_URL}/streams?${params.toString()}`, {
     signal: signal
