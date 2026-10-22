@@ -68,8 +68,14 @@ function downloadDonationHistoryCsv(streams: Stream[]): void {
   const link = document.createElement('a');
   link.href = url;
   link.download = 'streamgive-donations.csv';
+  // Some browsers cancel the download if the object URL disappears too
+  // soon after the click, so the anchor has to actually be in the
+  // document when it's clicked, and the URL needs to outlive the click
+  // itself rather than being revoked synchronously right after it.
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(url);
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export type SortOrder = 'newest' | 'oldest' | 'largest-committed' | 'ending-soonest';
